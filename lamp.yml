@@ -1,0 +1,79 @@
+---
+- hosts: centos
+  remote_user: ansible
+  become: yes
+  become_method: sudo
+  vars: 
+    packages:
+      - httpd
+      - php
+      - mariadb-server
+      - mariadb
+    sitio: ejemplo
+    server: www.ejemplo.com.uy
+    hostmaster: admin@ejemplo.com.uy   
+
+  tasks:
+  - name: Install LAMP software
+    dnf:
+      name: "{{ packages }}"
+      state: latest
+
+  - name: Create virtualhost config directory
+    file:
+      path: /etc/httpd/vhost.d
+      state: directory
+      mode: '0755'
+      owner: root
+
+  - name: Add virtualhost config directory to httpd.conf
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      line: IncludeOptional vhost.d/*.conf
+
+  - name: Create virtualhosts content directories
+    file:
+      path: "{{ item }}"
+      recurse: yes
+      state: directory
+      owner: apache
+      group: apache
+      mode: '0755'
+    loop:
+      - /var/www/{{ sitio }}
+      - /var/www/{{ sitio }}/html
+      - /var/www/{{ sitio }}/cgi-bin
+
+  - name: Create virtualhost configuration
+    template:
+      src: templates/{{ sitio }}.j2
+      dest: /etc/httpd/vhost.d/{{ sitio }}.conf
+      owner: root
+      mode: '0644'
+    notify: Restart httpd
+
+  - name: Start and enable apache
+    service:
+      name: "{{ item }}"
+      state: started
+      enabled: yes
+    loop:
+      - httpd
+      - mariadb
+
+  - name: Firewall Configuration
+    firewalld:
+      service: "{{ item }}"
+      state: enabled
+      permanent: yes
+      immediate: yes
+    loop:
+      - http
+      - mysql
+  
+  handlers:
+  - name: Restart httpd
+    service:
+      name: httpd
+      state: restarted
+      enabled: yes
