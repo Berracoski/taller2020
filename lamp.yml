@@ -1,11 +1,10 @@
 ---
-- hosts: centos
+- hosts: webserver
   remote_user: ansible
   become: yes
   become_method: sudo
   vars: 
     packages:
-      - httpd
       - php
       - mariadb-server
       - mariadb
@@ -13,23 +12,17 @@
     server: www.ejemplo.com.uy
     hostmaster: admin@ejemplo.com.uy   
 
+  roles:
+  - role: apache-centos    
+    when: ansible_facts['os_family'] == "RedHat"
+  - role: apache-ubuntu
+    when: ansible_facts['os_family'] == "Debian"
+
   tasks:
   - name: Install LAMP software
     dnf:
       name: "{{ packages }}"
       state: latest
-
-  - name: Create virtualhost config directory
-    file:
-      path: /etc/httpd/vhost.d
-      state: directory
-      mode: '0755'
-      owner: root
-
-  - name: Add virtualhost config directory to httpd.conf
-    lineinfile:
-      path: /etc/httpd/conf/httpd.conf
-      line: IncludeOptional vhost.d/*.conf
 
   - name: Create virtualhosts content directories
     file:
@@ -44,6 +37,12 @@
       - /var/www/{{ sitio }}/html
       - /var/www/{{ sitio }}/cgi-bin
 
+  - name: Add virtualhost config directory to httpd.conf
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      line: IncludeOptional vhost.d/*.conf
+
+
   - name: Create virtualhost configuration
     template:
       src: templates/{{ sitio }}.j2
@@ -52,13 +51,12 @@
       mode: '0644'
     notify: Restart httpd
 
-  - name: Start and enable apache
+  - name: Start and enable mariadb
     service:
       name: "{{ item }}"
       state: started
       enabled: yes
     loop:
-      - httpd
       - mariadb
 
   - name: Firewall Configuration
@@ -68,12 +66,4 @@
       permanent: yes
       immediate: yes
     loop:
-      - http
       - mysql
-  
-  handlers:
-  - name: Restart httpd
-    service:
-      name: httpd
-      state: restarted
-      enabled: yes

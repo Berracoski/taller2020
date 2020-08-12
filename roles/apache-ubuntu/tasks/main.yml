@@ -1,0 +1,23 @@
+---
+# tasks file for apache-ubuntu
+
+- name: Install Apache Server
+  apt:
+    name: apache2
+    state: latest
+    update_cache: yes
+
+- name: Start and enable apache service
+    service:
+      name: apache2
+      state: started
+      enabled: yes
+
+- name: Firewall Configuration
+    ufw:
+      rule: allow      
+      port: "{{ item }}"
+      state: enabled
+    loop:
+      - 80
+      - 443

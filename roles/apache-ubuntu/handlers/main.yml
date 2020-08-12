@@ -1,0 +1,8 @@
+---
+# handlers file for apache-ubuntu
+
+- name: Restart httpd
+  service:
+    name: apache2
+    state: restarted
+    enabled: yes
