@@ -1,0 +1,42 @@
+---
+# tasks file for roles/mariadb-install
+
+- name: Instalacion mariadb centos
+  yum:
+    name: "{{ item }}"
+    state: latest
+  loop:
+    - mariadb
+    - mariadb-server
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Instalacion mariadb ubuntu
+  apt:
+    name: "{{ item }}"
+    state: latest
+  loop:
+    - mariadb-client
+    - mariadb-server
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Enable and start mariadb
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+
+- name: Firewall centos
+  firewalld:
+    service: mysql
+    state: enabled
+    permanent: yes
+    immediate: yes
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Firewall ubuntu
+  ufw:
+    rule: allow
+    port: '3306'
+    proto: tcp
+    state: enabled
+  when: ansible_facts['os_family'] == "Debian"

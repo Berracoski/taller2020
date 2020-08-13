@@ -3,67 +3,22 @@
   remote_user: ansible
   become: yes
   become_method: sudo
-  vars: 
-    packages:
-      - php
-      - mariadb-server
-      - mariadb
-    sitio: ejemplo
-    server: www.ejemplo.com.uy
-    hostmaster: admin@ejemplo.com.uy   
+  vars_files:
+  - loadbalancer_vars.yml
 
   roles:
   - role: apache-centos    
     when: ansible_facts['os_family'] == "RedHat"
   - role: apache-ubuntu
     when: ansible_facts['os_family'] == "Debian"
+  - role: mariadb-install
 
   tasks:
-  - name: Install LAMP software
-    dnf:
-      name: "{{ packages }}"
-      state: latest
-
-  - name: Create virtualhosts content directories
-    file:
-      path: "{{ item }}"
-      recurse: yes
-      state: directory
-      owner: apache
-      group: apache
-      mode: '0755'
-    loop:
-      - /var/www/{{ sitio }}
-      - /var/www/{{ sitio }}/html
-      - /var/www/{{ sitio }}/cgi-bin
-
-  - name: Add virtualhost config directory to httpd.conf
-    lineinfile:
-      path: /etc/httpd/conf/httpd.conf
-      line: IncludeOptional vhost.d/*.conf
-
-
-  - name: Create virtualhost configuration
+  - name: Create loadbalance configuration CentOS
     template:
-      src: templates/{{ sitio }}.j2
-      dest: /etc/httpd/vhost.d/{{ sitio }}.conf
+      src: templates/loadbalancer.j2
+      dest: /etc/httpd/vhost.d/loadbalancer.conf
       owner: root
       mode: '0644'
+    when: ansible_facts['os_family'] == "RedHat"
     notify: Restart httpd
-
-  - name: Start and enable mariadb
-    service:
-      name: "{{ item }}"
-      state: started
-      enabled: yes
-    loop:
-      - mariadb
-
-  - name: Firewall Configuration
-    firewalld:
-      service: "{{ item }}"
-      state: enabled
-      permanent: yes
-      immediate: yes
-    loop:
-      - mysql

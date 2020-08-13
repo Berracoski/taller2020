@@ -1,0 +1,19 @@
+<VirtualHost *:80>
+	<Proxy balancer://cluster>
+		BalanceMember http://localhost:8801
+		BalanceMember http://localhost:8802
+		
+		Require all granted
+	</Proxy>
+
+	ProxyPreserveHost On
+	ProxyPass /balancer-manager !
+	ProxyPass / balancer://cluster/
+	ProxyPassReverse / balancer://cluster
+
+	<Location "/balancer-manager">
+		SetHandler balancer-manager
+		Require all granted
+	</Location>
+
+</VirtualHost>

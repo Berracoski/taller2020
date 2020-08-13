@@ -8,27 +8,27 @@
 - name: Create Virtualhost config directory
   file:
     path: /etc/httpd/vhost.d
-      state: directory
-      mode: '0755'
-      owner: root
+    state: directory
+    mode: '0755'
+    owner: root
 
 - name: Add virtualhost config directory to httpd.conf
-    lineinfile:
-      path: /etc/httpd/conf/httpd.conf
-      line: IncludeOptional vhost.d/*.conf
+  lineinfile:
+    path: /etc/httpd/conf/httpd.conf
+    line: IncludeOptional vhost.d/*.conf
 
 - name: Start and enable apache
-    service:
-      name: httpd
-      state: started
-      enabled: yes
+  service:
+    name: httpd
+    state: started
+    enabled: yes
 
 - name: Firewall Configuration
-    firewalld:
-      service: "{{ item }}"
-      state: enabled
-      permanent: yes
-      immediate: yes
-    loop:
-      - http
-      - https
+  firewalld:
+    service: "{{ item }}"
+    state: enabled
+    permanent: yes
+    immediate: yes
+  loop:
+    - http
+    - https
